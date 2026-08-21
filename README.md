@@ -1,6 +1,10 @@
 # ✨ Gemini Notebook OS — Sistema Operacional de Conhecimento e IA Pessoal
 
-Aplicação Full-Stack inspirada no conceito **"Gemini Notebook OS"** (popularizado por Julian Goldie a partir do Google NotebookLM / Gemini). Uma central unificada para transformar documentos, PDFs, artigos da web e vídeos em uma central inteligente de aprendizado e criação com IA.
+[![GitHub Pages](https://img.shields.io/badge/Demo%20Online-GitHub%20Pages-blue?style=for-the-badge&logo=github)](https://ricardoprazeres.github.io/gemini-notebook-os/)
+
+> 🌐 **Acesse a versão Web online:** **[https://ricardoprazeres.github.io/gemini-notebook-os/](https://ricardoprazeres.github.io/gemini-notebook-os/)**
+
+Aplicação inspirada no conceito **"Gemini Notebook OS"** (popularizado por Julian Goldie a partir do Google NotebookLM / Gemini). Uma central unificada para transformar documentos, PDFs, artigos da web e vídeos em uma central inteligente de aprendizado e criação com IA.
 
 ---
 
