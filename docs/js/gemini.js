@@ -43,16 +43,18 @@ class GeminiClientService {
 
     if (apiKey) {
       const candidateModels = [activeModel, "gemini-2.0-flash", "gemini-1.5-flash-8b", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-pro"];
+      const uniqueCandidates = [...new Set(candidateModels)];
       const personaSystem = this.personaPrompts[persona] || this.personaPrompts.default;
 
       const systemInstruction = `${personaSystem}
 
 INSTRUÇÕES OBRIGATÓRIAS DE GROUNDING (ANCORAGEM EM FONTES):
 1. Sua principal fonte de verdade são estritamente os trechos de documentos fornecidos no [CONTEXTO DE FONTES].
-2. SEMPRE que mencionar um fato, dado ou conceito derivado dos trechos, insira a citação correspondente no formato [1], [2], etc.
-3. Responda em Português com excelente formatação Markdown.`;
+2. SEMPRE que mencionar um fato, dado ou conceito derivado dos trechos, insira a citação correspondente no formato [1], [2], etc., combinando com os números das fontes fornecidas.
+3. Se a informação não estiver presente no contexto, indique educadamente.
+4. Responda em Português do Brasil com excelente formatação Markdown (negrito, listas, títulos).`;
 
-      const prompt = `[CONTEXTO DE FONTES]:\n${contextText}\n\n---\nPergunta do Usuário: ${userQuery}`;
+      const promptText = `${systemInstruction}\n\n[CONTEXTO DE FONTES]:\n${contextText}\n\n---\nPergunta do Usuário: ${userQuery}`;
 
       const contents = [];
       history.slice(-6).forEach(h => {
@@ -61,16 +63,17 @@ INSTRUÇÕES OBRIGATÓRIAS DE GROUNDING (ANCORAGEM EM FONTES):
           parts: [{ text: h.content }]
         });
       });
-      contents.push({ role: "user", parts: [{ text: prompt }] });
+      contents.push({ role: "user", parts: [{ text: promptText }] });
 
-      for (const model of candidateModels) {
+      let lastError = "";
+
+      for (const model of uniqueCandidates) {
         try {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
           const res = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              systemInstruction: { parts: [{ text: systemInstruction }] },
               contents: contents,
               generationConfig: { temperature: 0.4, maxOutputTokens: 2048 }
             })
@@ -78,25 +81,43 @@ INSTRUÇÕES OBRIGATÓRIAS DE GROUNDING (ANCORAGEM EM FONTES):
 
           if (res.ok) {
             const data = await res.json();
-            const replyText = data.candidates[0].content.parts[0].text;
+            if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+              const replyText = data.candidates[0].content.parts[0].text;
 
-            const usedCitations = [];
-            Object.values(citationsMap).forEach(c => {
-              if (replyText.includes(`[${c.number}]`)) {
-                usedCitations.push(c);
-              }
-            });
+              const usedCitations = [];
+              Object.values(citationsMap).forEach(c => {
+                if (replyText.includes(`[${c.number}]`)) {
+                  usedCitations.push(c);
+                }
+              });
 
-            return {
-              content: replyText,
-              citations: usedCitations,
-              is_demo: false,
-              model: model
-            };
+              return {
+                content: replyText,
+                citations: usedCitations,
+                is_demo: false,
+                model: model
+              };
+            }
+          } else {
+            const errData = await res.json().catch(() => ({}));
+            lastError = errData.error ? errData.error.message : `HTTP ${res.status}`;
+            console.warn(`Erro na API Gemini (${model}):`, lastError);
           }
         } catch (e) {
+          lastError = e.message;
           console.warn(`Tentativa com ${model} falhou:`, e);
         }
+      }
+
+      // If key is set but all calls errored, notify user
+      if (lastError) {
+        window.App.showToast(`Erro na API Gemini: ${lastError}`, "error");
+        return {
+          content: `⚠️ **Erro na chamada à API Gemini:** ${lastError}\n\nVerifique se a sua chave de API está correta em ⚙️ **Configurações** ou se a sua cota no Google AI Studio está ativa.`,
+          citations: [],
+          is_demo: false,
+          model: "Erro na API"
+        };
       }
     }
 

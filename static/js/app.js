@@ -236,6 +236,7 @@ class GeminiNotebookApp {
       const data = await res.json();
       if (data.valid) {
         this.showToast(data.message, "success");
+        await this.saveSettings();
       } else {
         this.showToast(`Falha: ${data.message}`, "error");
       }

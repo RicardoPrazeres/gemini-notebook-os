@@ -157,6 +157,10 @@ class ClientNotebookApp {
     const res = await window.GeminiService.testKey(key);
     if (res.valid) {
       this.showToast(res.message, "success");
+      // Auto-save immediately to localStorage
+      const model = document.getElementById("select-gemini-model").value;
+      window.DB.saveSettings({ gemini_api_key: key, gemini_model: model });
+      this.updateStatusBadge();
     } else {
       this.showToast(`Falha: ${res.message}`, "error");
     }
