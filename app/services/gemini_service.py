@@ -95,13 +95,18 @@ Pergunta do Usuário: {user_query}
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
                 
                 contents = []
+                expected_role = "user"
                 if history:
-                    for h in history[-6:]:
-                        contents.append({
-                            "role": "user" if h["role"] == "user" else "model",
-                            "parts": [{"text": h["content"]}]
-                        })
+                    for h in history[-8:]:
+                        role = "user" if h.get("role") == "user" else "model"
+                        if role == expected_role and h.get("content"):
+                            contents.append({"role": role, "parts": [{"text": h["content"]}]})
+                            expected_role = "model" if expected_role == "user" else "user"
                 
+                # Ensure the last item before current prompt is a model response
+                if contents and contents[-1]["role"] == "user":
+                    contents.pop()
+
                 contents.append({
                     "role": "user",
                     "parts": [{"text": prompt}]

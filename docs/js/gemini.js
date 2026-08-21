@@ -36,6 +36,31 @@ class GeminiClientService {
     }
   }
 
+  buildAlternatingContents(history, currentPrompt) {
+    const contents = [];
+    let expectedRole = "user";
+
+    // Filter out the message that was just added if present
+    const prior = (history || []).slice(-8);
+
+    for (const h of prior) {
+      if (!h.content) continue;
+      const role = h.role === "user" ? "user" : "model";
+      if (role === expectedRole) {
+        contents.push({ role, parts: [{ text: h.content }] });
+        expectedRole = expectedRole === "user" ? "model" : "user";
+      }
+    }
+
+    // Ensure the last item before currentPrompt is a model response (or empty)
+    if (contents.length > 0 && contents[contents.length - 1].role === "user") {
+      contents.pop();
+    }
+
+    contents.push({ role: "user", parts: [{ text: currentPrompt }] });
+    return contents;
+  }
+
   async generateResponse(userQuery, contextText, citationsMap, persona = "default", history = []) {
     const settings = window.DB.getSettings();
     const apiKey = (settings.gemini_api_key || "").trim();
@@ -51,19 +76,11 @@ class GeminiClientService {
 INSTRUÇÕES OBRIGATÓRIAS DE GROUNDING (ANCORAGEM EM FONTES):
 1. Sua principal fonte de verdade são estritamente os trechos de documentos fornecidos no [CONTEXTO DE FONTES].
 2. SEMPRE que mencionar um fato, dado ou conceito derivado dos trechos, insira a citação correspondente no formato [1], [2], etc., combinando com os números das fontes fornecidas.
-3. Se a informação não estiver presente no contexto, indique educadamente.
-4. Responda em Português do Brasil com excelente formatação Markdown (negrito, listas, títulos).`;
+3. Se a informação não estiver presente no contexto ou for solicitada uma criação derivada (como mapa mental, resumo ou roteiro), elabore com base estrita no material fornecido.
+4. Responda em Português do Brasil com formatação Markdown impecável.`;
 
       const promptText = `${systemInstruction}\n\n[CONTEXTO DE FONTES]:\n${contextText}\n\n---\nPergunta do Usuário: ${userQuery}`;
-
-      const contents = [];
-      history.slice(-6).forEach(h => {
-        contents.push({
-          role: h.role === "user" ? "user" : "model",
-          parts: [{ text: h.content }]
-        });
-      });
-      contents.push({ role: "user", parts: [{ text: promptText }] });
+      const contents = this.buildAlternatingContents(history, promptText);
 
       let lastError = "";
 
@@ -101,19 +118,19 @@ INSTRUÇÕES OBRIGATÓRIAS DE GROUNDING (ANCORAGEM EM FONTES):
           } else {
             const errData = await res.json().catch(() => ({}));
             lastError = errData.error ? errData.error.message : `HTTP ${res.status}`;
-            console.warn(`Erro na API Gemini (${model}):`, lastError);
+            console.error(`[Gemini API Error] (${model}):`, lastError);
           }
         } catch (e) {
           lastError = e.message;
-          console.warn(`Tentativa com ${model} falhou:`, e);
+          console.error(`[Gemini API Exception] (${model}):`, e);
         }
       }
 
-      // If key is set but all calls errored, notify user
+      // If key is present and API calls failed, display explicit alert
       if (lastError) {
-        window.App.showToast(`Erro na API Gemini: ${lastError}`, "error");
+        window.App.showToast(`Erro Gemini: ${lastError}`, "error");
         return {
-          content: `⚠️ **Erro na chamada à API Gemini:** ${lastError}\n\nVerifique se a sua chave de API está correta em ⚙️ **Configurações** ou se a sua cota no Google AI Studio está ativa.`,
+          content: `⚠️ **Erro na chamada à API Google Gemini:**\n> ${lastError}\n\n*Por favor, verifique se a chave no menu ⚙️ Configurações está com a cota ativa no Google AI Studio.*`,
           citations: [],
           is_demo: false,
           model: "Erro na API"
