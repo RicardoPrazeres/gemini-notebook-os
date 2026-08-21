@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gemini Notebook OS — Sistema Operacional de Conhecimento e IA</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <!-- Mermaid.js for Mind Maps -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head>
+<body>
+
+  <!-- Top App Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <a href="#" class="app-brand">
+        <span>✨ Gemini Notebook OS</span>
+        <span class="brand-badge">PRO</span>
+      </a>
+
+      <!-- Notebook Dropdown / Selector -->
+      <div class="notebook-selector" id="btn-notebook-select" title="Trocar ou gerenciar cadernos">
+        <span id="current-notebook-icon">📓</span>
+        <span id="current-notebook-title">Carregando caderno...</span>
+        <span style="font-size: 0.7rem; color: var(--text-muted);">▼</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <!-- Status Badge (Demo vs Live Gemini) -->
+      <div class="status-badge demo" id="api-status-badge" title="Status da conexão com o Google Gemini">
+        <span class="status-dot"></span>
+        <span id="api-status-text">Modo Demo</span>
+      </div>
+
+      <!-- Theme Switcher -->
+      <button class="icon-btn" id="btn-theme-toggle" title="Alternar Modo Claro / Escuro">
+        🌙
+      </button>
+
+      <!-- Settings / API Key Button -->
+      <button class="icon-btn" id="btn-open-settings" title="Configurações & Chave Gemini API">
+        ⚙️
+      </button>
+    </div>
+  </header>
+
+  <!-- 3-Column Workspace Container -->
+  <main class="app-container">
+
+    <!-- LEFT COLUMN: Knowledge Vault (Sources) -->
+    <aside class="panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>📚 Fontes</span>
+          <span class="badge" id="source-count-badge">0</span>
+        </div>
+        <div class="sources-header-actions">
+          <button class="btn-primary" id="btn-add-source">
+            <span>+</span> Adicionar
+          </button>
+        </div>
+      </div>
+
+      <div class="panel-content">
+        <div class="sources-controls">
+          <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+            <input type="checkbox" id="check-select-all" checked>
+            <span>Selecionar todas</span>
+          </label>
+          <span id="sources-char-summary" style="font-size: 0.7rem; color: var(--text-muted);">0 carac.</span>
+        </div>
+
+        <div id="sources-list" style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <!-- Dynamically populated sources -->
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER COLUMN: Grounded AI Chat -->
+    <section class="panel chat-panel">
+      <!-- Persona Filter Bar -->
+      <div class="persona-bar">
+        <span class="persona-label">Persona IA:</span>
+        <button class="persona-pill active" data-persona="default">✨ Padrão</button>
+        <button class="persona-pill" data-persona="researcher">🔬 Pesquisador</button>
+        <button class="persona-pill" data-persona="teacher">👨‍🏫 Professor Didático</button>
+        <button class="persona-pill" data-persona="seo_creator">🚀 SEO & Conteúdo</button>
+        <button class="persona-pill" data-persona="analyst">📊 Analista Estratégico</button>
+      </div>
+
+      <!-- Chat History Stream -->
+      <div class="chat-history" id="chat-history">
+        <!-- Empty State with Starter Prompts -->
+        <div class="empty-chat-state" id="empty-chat-state">
+          <div class="empty-chat-icon">💡</div>
+          <h3 style="font-size: 1.1rem; color: var(--text-primary);">O que você gostaria de explorar hoje?</h3>
+          <p style="font-size: 0.82rem; max-width: 480px;">
+            Faça perguntas sobre suas fontes. O Gemini responde com citações estritas <span class="cite-pill">[1]</span> e síntese grounded sem alucinações.
+          </p>
+
+          <div class="starter-chips-container" id="starter-chips">
+            <!-- Dynamically populated starter chips -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Input Area -->
+      <div class="chat-input-wrapper">
+        <div class="chat-input-box">
+          <button class="icon-btn" id="btn-clear-chat" title="Limpar conversa atual" style="width: 28px; height: 28px;">
+            🗑️
+          </button>
+          <textarea 
+            class="chat-textarea" 
+            id="chat-input" 
+            placeholder="Pergunte qualquer coisa sobre as fontes deste caderno..."
+            rows="1"
+          ></textarea>
+          <button class="chat-send-btn" id="btn-send-message" title="Enviar mensagem (Enter)">
+            ➔
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT COLUMN: Studio & Artifacts -->
+    <aside class="panel studio-panel">
+      <div class="studio-tabs">
+        <button class="studio-tab-btn active" data-tab="tools">Studio IA</button>
+        <button class="studio-tab-btn" data-tab="saved">Salvos (<span id="saved-count">0</span>)</button>
+      </div>
+
+      <div class="panel-content" id="studio-tab-tools">
+        <!-- Audio Overview (Podcast Player) Card -->
+        <div class="audio-overview-card">
+          <div class="audio-header">
+            <div class="audio-title-box">
+              <span>🎙️</span>
+              <h4>Audio Overview</h4>
+            </div>
+            <div class="hosts-avatars">
+              <span class="host-badge alex">👨 Alex</span>
+              <span class="host-badge sam">👩 Sam</span>
+            </div>
+          </div>
+
+          <p id="audio-summary-text" style="font-size: 0.72rem; color: var(--text-secondary); line-height: 1.3;">
+            Conversa dinâmica em áudio com 2 apresentadores especialistas dissecando suas fontes.
+          </p>
+
+          <!-- Audio Waveform Visualizer -->
+          <div class="waveform-container" id="audio-waveform">
+            <div class="waveform-bar"></div>
+            <div class="waveform-bar"></div>
+            <div class="waveform-bar"></div>
+            <div class="waveform-bar"></div>
+            <div class="waveform-bar"></div>
+            <div class="waveform-bar"></div>
+            <div class="waveform-bar"></div>
+            <div class="waveform-bar"></div>
+            <div class="waveform-bar"></div>
+            <div class="waveform-bar"></div>
+            <div class="waveform-bar"></div>
+            <div class="waveform-bar"></div>
+            <div class="waveform-bar"></div>
+            <div class="waveform-bar"></div>
+          </div>
+
+          <!-- Audio Player Controls -->
+          <div class="audio-controls">
+            <button class="audio-play-btn" id="btn-podcast-play">
+              <span id="play-icon">▶</span> <span id="play-label">Ouvir Podcast</span>
+            </button>
+            <select class="speed-select" id="audio-speed-select">
+              <option value="1">1.0x</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Studio Generators Grid -->
+        <div class="studio-grid">
+          <div class="studio-tool-card" data-action="slides">
+            <span class="tool-icon">📽️</span>
+            <span class="tool-title">Slides Deck</span>
+            <span class="tool-desc">Apresentação executiva</span>
+          </div>
+
+          <div class="studio-tool-card" data-action="video">
+            <span class="tool-icon">🎬</span>
+            <span class="tool-title">Vídeo Narrado</span>
+            <span class="tool-desc">Vídeo explicativo com voz</span>
+          </div>
+
+          <div class="studio-tool-card" data-action="mindmap">
+            <span class="tool-icon">🧠</span>
+            <span class="tool-title">Mapa Mental</span>
+            <span class="tool-desc">Diagrama visual de conexões</span>
+          </div>
+
+          <div class="studio-tool-card" data-action="flashcards">
+            <span class="tool-icon">🗂️</span>
+            <span class="tool-title">Flashcards</span>
+            <span class="tool-desc">Cartões de fixação 3D</span>
+          </div>
+
+          <div class="studio-tool-card" data-action="briefing">
+            <span class="tool-icon">📄</span>
+            <span class="tool-title">Briefing Executivo</span>
+            <span class="tool-desc">Resumo para tomada de decisão</span>
+          </div>
+
+          <div class="studio-tool-card" data-action="faq">
+            <span class="tool-icon">❓</span>
+            <span class="tool-title">FAQ & Respostas</span>
+            <span class="tool-desc">Perguntas mais frequentes</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Saved Artifacts Tab -->
+      <div class="panel-content" id="studio-tab-saved" style="display: none;">
+        <div id="saved-artifacts-list" style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <!-- Saved items list -->
+        </div>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- MODALS -->
+
+  <!-- 1. Add Source Modal -->
+  <div class="modal-backdrop" id="modal-add-source">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><span>📥</span> Adicionar Nova Fonte</h3>
+        <button class="icon-btn modal-close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="tab-nav">
+          <button class="tab-btn active" data-source-tab="tab-upload">📁 Upload (PDF / TXT / MD)</button>
+          <button class="tab-btn" data-source-tab="tab-url">🌐 Link Web</button>
+          <button class="tab-btn" data-source-tab="tab-youtube">▶️ YouTube</button>
+          <button class="tab-btn" data-source-tab="tab-note">📝 Nota Rápida</button>
+        </div>
+
+        <!-- Tab 1: File Upload -->
+        <div class="source-tab-content" id="tab-upload">
+          <div class="dropzone" id="file-dropzone">
+            <div class="dropzone-icon">📄</div>
+            <p style="font-weight: 600; font-size: 0.9rem;">Arraste ou clique para selecionar</p>
+            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">Suporta PDF, TXT, Markdown, CSV</p>
+            <input type="file" id="file-input" style="display: none;" accept=".pdf,.txt,.md,.markdown,.csv,.json">
+          </div>
+          <p id="upload-status" style="font-size: 0.75rem; color: var(--accent-primary); margin-top: 0.5rem; text-align: center; display: none;"></p>
+        </div>
+
+        <!-- Tab 2: Web URL -->
+        <div class="source-tab-content" id="tab-url" style="display: none;">
+          <div class="form-group">
+            <label>URL da Página ou Artigo:</label>
+            <input type="url" class="form-input" id="input-web-url" placeholder="https://exemplo.com/artigo">
+          </div>
+        </div>
+
+        <!-- Tab 3: YouTube -->
+        <div class="source-tab-content" id="tab-youtube" style="display: none;">
+          <div class="form-group">
+            <label>Link do Vídeo do YouTube:</label>
+            <input type="url" class="form-input" id="input-youtube-url" placeholder="https://www.youtube.com/watch?v=...">
+            <span style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 4px;">
+              Extrai automaticamente o título, descrição e transcrição com timestamps.
+            </span>
+          </div>
+        </div>
+
+        <!-- Tab 4: Quick Note -->
+        <div class="source-tab-content" id="tab-note" style="display: none;">
+          <div class="form-group">
+            <label>Título da Nota:</label>
+            <input type="text" class="form-input" id="input-note-title" placeholder="Ex: Ideias de Projeto">
+          </div>
+          <div class="form-group" style="margin-top: 0.5rem;">
+            <label>Conteúdo (Markdown suportado):</label>
+            <textarea class="form-textarea" id="input-note-content" rows="6" placeholder="Escreva ou cole seu texto aqui..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary modal-close">Cancelar</button>
+        <button class="btn-primary" id="btn-confirm-add-source">Adicionar Fonte</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Notebooks Manager Modal -->
+  <div class="modal-backdrop" id="modal-notebooks">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><span>📓</span> Meus Cadernos</h3>
+        <button class="icon-btn modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <span style="font-size: 0.8rem; color: var(--text-secondary);">Selecione ou crie um novo caderno:</span>
+          <button class="btn-primary" id="btn-show-new-notebook-form" style="padding: 4px 8px; font-size: 0.75rem;">+ Novo Caderno</button>
+        </div>
+
+        <!-- New Notebook Inline Form -->
+        <div id="new-notebook-form" style="display: none; padding: 0.75rem; background-color: var(--bg-primary); border-radius: var(--radius-md); margin-bottom: 0.75rem; border: 1px solid var(--border-color);">
+          <div class="form-group">
+            <label>Título:</label>
+            <input type="text" class="form-input" id="new-nb-title" placeholder="Ex: Pesquisa de Mercado">
+          </div>
+          <div class="form-group" style="margin-top: 0.4rem;">
+            <label>Descrição:</label>
+            <input type="text" class="form-input" id="new-nb-desc" placeholder="Breve resumo do tema">
+          </div>
+          <div style="display: flex; gap: 0.4rem; justify-content: flex-end; margin-top: 0.5rem;">
+            <button class="btn-secondary" id="btn-cancel-new-nb" style="padding: 3px 8px; font-size: 0.75rem;">Cancelar</button>
+            <button class="btn-primary" id="btn-create-new-nb" style="padding: 3px 8px; font-size: 0.75rem;">Criar</button>
+          </div>
+        </div>
+
+        <!-- Notebooks List -->
+        <div id="notebooks-modal-list" style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Settings Modal (Gemini API & Models) -->
+  <div class="modal-backdrop" id="modal-settings">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><span>⚙️</span> Configurações do Gemini Notebook OS</h3>
+        <button class="icon-btn modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Chave da API Google Gemini (Google AI Studio):</label>
+          <div style="display: flex; gap: 0.4rem;">
+            <input type="password" class="form-input" id="input-api-key" placeholder="Cole sua chave AIzaSy..." style="flex: 1;">
+            <button class="btn-secondary" id="btn-test-key">Testar</button>
+          </div>
+          <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">
+            Obtenha sua chave gratuita em: 
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--accent-primary);">Google AI Studio ↗</a>
+          </span>
+        </div>
+
+        <div class="form-group" style="margin-top: 0.75rem;">
+          <label>Modelo Gemini:</label>
+          <select class="form-select" id="select-gemini-model">
+            <option value="gemini-2.0-flash">Gemini 2.0 Flash (Mais Rápido & Recente)</option>
+            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Ultrarrápido)</option>
+            <option value="gemini-1.5-pro">Gemini 1.5 Pro (Máximo Raciocínio & Contexto)</option>
+          </select>
+        </div>
+
+        <div style="background-color: var(--bg-primary); padding: 0.85rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4;">
+          <strong>💡 Nota sobre Privacidade & Armazenamento:</strong>
+          <br>Seus documentos, notas e histórico de conversas são armazenados exclusivamente no banco de dados SQLite local no seu computador.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary modal-close">Fechar</button>
+        <button class="btn-primary" id="btn-save-settings">Salvar Configurações</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Citation Excerpt Inspector Modal -->
+  <div class="modal-backdrop" id="modal-citation">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="citation-modal-title"><span>📌</span> Citação da Fonte</h3>
+        <button class="icon-btn modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size: 0.75rem; color: var(--accent-primary); font-weight: 600;" id="citation-source-name">
+          Documento
+        </div>
+        <div style="background-color: var(--bg-primary); padding: 1rem; border-radius: var(--radius-md); border-left: 3px solid var(--accent-primary); font-size: 0.85rem; line-height: 1.5; white-space: pre-wrap;" id="citation-excerpt-text">
+          Texto da citação...
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary modal-close">Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Studio Artifact Fullscreen Viewer Modal -->
+  <div class="modal-backdrop" id="modal-artifact">
+    <div class="modal-card large">
+      <div class="modal-header">
+        <h3 id="artifact-modal-title"><span>✨</span> Artefato Gerado</h3>
+        <div style="display: flex; gap: 0.4rem; align-items: center;">
+          <button class="btn-secondary" id="btn-export-artifact" style="padding: 4px 8px; font-size: 0.75rem;">📥 Exportar</button>
+          <button class="icon-btn modal-close">✕</button>
+        </div>
+      </div>
+      <div class="modal-body" id="artifact-modal-body">
+        <!-- Dynamic Artifact Viewer Injected (Mermaid, Flashcards, Markdown) -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="/static/js/audio_player.js"></script>
+  <script src="/static/js/studio.js"></script>
+  <script src="/static/js/chat.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

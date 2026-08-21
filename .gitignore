@@ -1,0 +1,28 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Database & Local Uploads (Privacy)
+storage/notebooks.db
+storage/uploads/*
+!storage/uploads/.gitkeep
+
+# macOS & System files
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Environment Variables & Keys
+.env
+.env.local
+*.key
